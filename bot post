@@ -1,0 +1,17 @@
+from telegram import Bot
+import asyncio
+import time
+
+TOKEN = '72.........................'     #replace your access token 
+CHAT_ID = '64........'                    #replace your chat id 
+
+async def send_message(bot, chat_id, text):
+    await bot.send_message(chat_id=chat_id, text=text)
+
+async def main():
+    bot = Bot(token=TOKEN)
+    await send_message(bot, CHAT_ID, "Hello! This is an automated message.")
+    await send_message(bot, CHAT_ID, "Hello! welcome to Ai Bot.")
+    
+if __name__ == '__main__':
+    asyncio.run(main())
