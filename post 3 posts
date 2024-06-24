@@ -1,0 +1,68 @@
+import pandas as pd
+from telegram import Bot
+import schedule
+import asyncio
+import threading
+import time
+import os
+from datetime import datetime
+
+API_TOKEN = '72....................' #replace it with your access token 
+CHAT_ID = '64..............'         #replace it with your  chat ID
+EXCEL_FILE = 'C:/Users/96279/Documents/posts.xlsx' #this the excel path for the excel sheet import data from 
+POST_LIMIT = 3  
+STATE_FILE = 'last_post_index.txt'  
+
+bot = Bot(token=API_TOKEN)
+
+#Read Excel file starting 
+df = pd.read_excel(EXCEL_FILE, skiprows=1)  
+
+def get_last_post_index():
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, 'r') as file:
+            return int(file.read().strip())
+    return 0
+def save_last_post_index(index):
+    with open(STATE_FILE, 'w') as file:
+        file.write(str(index))
+
+#To keep track of the current post
+last_post_index = get_last_post_index()
+post_iterator = iter(df.iloc[last_post_index:, 0])  
+post_count = 0
+#Function to send message to Telegram
+async def send_message():
+    global post_count, last_post_index
+    try:
+        message = next(post_iterator)
+        await bot.send_message(chat_id=CHAT_ID, text=message)
+        post_count += 1
+        last_post_index += 1
+        save_last_post_index(last_post_index)
+        print(f"Posted message: {message} at {datetime.now()}")
+    except StopIteration:
+        print("All posts have been submitted.")
+        schedule.clear()  
+
+def schedule_message(loop):
+    asyncio.run_coroutine_threadsafe(send_message(), loop)
+    print("Scheduled message sent")
+
+def run_event_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+loop = asyncio.new_event_loop()
+threading.Thread(target=run_event_loop, args=(loop,), daemon=True).start()
+
+#posts times
+schedule.every().day.at("04:15").do(schedule_message, loop)
+schedule.every().day.at("04:16").do(schedule_message, loop)
+schedule.every().day.at("04:17").do(schedule_message, loop)
+print("Scheduling started...")
+while True:
+    schedule.run_pending()
+    if post_count >= POST_LIMIT:
+        print("Reached post limit for today, stopping...")
+        break
+    time.sleep(1)
